@@ -1,0 +1,6 @@
+{
+  "name": "fcomment",
+  "description": "A minimal code hosting service",
+  "repository": "https://github.com/seokmin-ac/fcomment",
+  "keywords": ["python", "flask", "comment"]
+}
