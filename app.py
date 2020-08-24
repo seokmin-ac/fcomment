@@ -7,6 +7,10 @@ def create_app():
     def get_default():
         return 'Hello!'
 
+    @app.route('/hello')
+    def get_hello():
+        return 'World!'
+
     return app
 
 app = create_app()
