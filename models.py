@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, ForeignKey
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 
@@ -17,3 +17,10 @@ class Article(db.Model):
 
     id = Column(Integer, primary_key=True)
     url = Column(String)
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+
+    id = Column(Integer, primary_key=True)
+    text = Column(String)
+    article = Column(Integer, ForeignKey('articles.id'))
