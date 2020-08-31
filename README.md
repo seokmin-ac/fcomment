@@ -28,9 +28,10 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
 - `GET /articles`: Get all articles.
 - `POST /articles`: Add an article to the database.
 - `DELETE /articles`: Remove an article from the database.
-- `GET /articles/<id>/comments`: Get all comments for a given article.
-- `POST /articles/<id>/comments`: Add a comment to a given article.
+- `GET /articles/<id>`: Get all comments for a given article.
+- `POST /articles/<id>`: Add a comment to a given article.
 - `GET /comments`: Get all comments ordered by time.
+- `GET /comments/<id>`: Get a comment by given id.
 - `POST /comments/<id>`: Add a reply for a given comment.
 - `PATCH /comments/<id>`: Edit a given comment.
 - `DELETE /comments/<id>`: Remove a given comment.
