@@ -20,8 +20,8 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
 
 1. Grant your account as a `manager`.
 2. Call `POST /articles` API to register your article to fcomment. I recommend to use `id` as slug for your article.
-3. Now fcomment has your article. Try `POST /articles/<id>/comments` with comment text. It needs JWT token.
-4. Try `GET /articles/<id>/comments`. It will returns all comments for the article.
+3. Now fcomment has your article. Try `POST /articles/<id>` with comment text. It needs JWT token.
+4. Try `GET /articles/<id>`. It will returns all comments for the article.
 
 ## Endpoints
 
