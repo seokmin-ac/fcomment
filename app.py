@@ -110,7 +110,7 @@ def internal_server_error(error):
       'message': 'Internal Server error.'
     }), 500
 
-@app.error_handler(AuthError)
+@app.errorhandler(AuthError)
 def auth_error(error):
     return jsonify({
         'success': False,
