@@ -28,17 +28,17 @@ def get_articles():
 
 @app.route('/articles', methods=['POST'])
 @requires_auth('post:articles')
-def post_articles():
-    id = request.json['id']
-    found = Article.query.filter_by(id=id).one_or_none()
-    # Already exists
-    if found is not None:
-        return jsonify({
-            'success': True,
-            'id': id
-        })
-
+def post_articles(payload):
     try:
+        id = request.json['id']
+        found = Article.query.filter_by(id=id).one_or_none()
+        # Already exists
+        if found is not None:
+            return jsonify({
+                'success': True,
+                'id': id
+            })
+
         article = Article(
             id=id
         )
