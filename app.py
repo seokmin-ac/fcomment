@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
+from werkzeug.exceptions import NotFound, UnprocessableEntity
 
 try:
     from dotenv import load_dotenv
@@ -9,7 +10,7 @@ except Exception:
     pass
 
 from models import setup_db, Article, Comment, db_rollback
-from auth import AuthError, client_credentials
+from auth import AuthError, requires_auth
 
 app = Flask(__name__)
 CORS(app)
@@ -26,7 +27,7 @@ def get_articles():
 
 
 @app.route('/articles', methods=['POST'])
-@client_credentials()
+@requires_auth('post:articles')
 def post_articles():
     id = request.json['id']
     found = Article.query.filter_by(id=id).one_or_none()
@@ -48,15 +49,15 @@ def post_articles():
         })
     except Exception:
         db_rollback()
-        abort(422)
+        raise UnprocessableEntity(description='Cannot add an article.')
 
 
 @app.route('/articles/<string:id>', methods=['DELETE'])
-@client_credentials()
+@requires_auth('delete:articles')
 def delete_articles(payload, id):
     found = Article.query.filter_by(id=id).one_or_none()
     if found is None:
-        abort(404)
+        raise NotFound(description='Cannot find a given article.')
 
     try:
         # TODO: Remove all related comments with a given article.
@@ -67,7 +68,7 @@ def delete_articles(payload, id):
         })
     except Exception:
         db_rollback()
-        abort(422)
+        raise UnprocessableEntity(description='Cannot remove a given article.')
 
 
 @app.route('/articles/<string:id>')
@@ -105,31 +106,23 @@ def delete_comment(id):
     pass
 
 
-@app.errorhandler(404)
+@app.errorhandler(NotFound)
 def not_found(error):
     return jsonify({
       'success': False,
-      'error': 404,
-      'message': 'Resource not found.'
-    }), 404
+      'error': error.code,
+      'message': error.description
+    }), error.code
 
 
-@app.errorhandler(422)
+@app.errorhandler(UnprocessableEntity)
 def unprocessable_entity(error):
     return jsonify({
       'success': False,
-      'error': 422,
-      'message': 'Unprocessable entity.'
-    }), 422
+      'error': error.code,
+      'message': error.description
+    }), error.code
 
-
-@app.errorhandler(500)
-def internal_server_error(error):
-    return jsonify({
-      'success': False,
-      'error': 500,
-      'message': 'Internal Server error.'
-    }), 500
 
 @app.errorhandler(AuthError)
 def auth_error(error):
