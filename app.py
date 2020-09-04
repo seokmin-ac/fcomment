@@ -1,14 +1,15 @@
 import os
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
-from models import setup_db, Article, Comment, db_rollback
-from auth import AuthError
 
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except Exception:
     pass
+
+from models import setup_db, Article, Comment, db_rollback
+from auth import AuthError, client_credentials
 
 app = Flask(__name__)
 CORS(app)
@@ -25,10 +26,20 @@ def get_articles():
 
 
 @app.route('/articles', methods=['POST'])
+@client_credentials()
 def post_articles():
+    id = request.json['id']
+    found = Article.query.filter_by(id=id).one_or_none()
+    # Already exists
+    if found is not None:
+        return jsonify({
+            'success': True,
+            'id': id
+        })
+
     try:
         article = Article(
-            id=request.json['id']
+            id=id
         )
         article.insert()
         return jsonify({
@@ -40,9 +51,22 @@ def post_articles():
         abort(422)
 
 
-@app.route('/articles', methods=['DELETE'])
-def delete_articles():
-    pass
+@app.route('/articles/<string:id>', methods=['DELETE'])
+@client_credentials()
+def delete_articles(payload, id):
+    found = Article.query.filter_by(id=id).one_or_none()
+    if found is None:
+        abort(404)
+
+    try:
+        found.delete()
+        return jsonify({
+            'success': True,
+            'id': id
+        })
+    except Exception:
+        db_rollback()
+        abort(422)
 
 
 @app.route('/articles/<string:id>')
@@ -111,7 +135,7 @@ def auth_error(error):
     return jsonify({
         'success': False,
         'error': error.status_code,
-        'message': f'{error.error.code}: {error.error.description}'
+        'message': f'{error.error["code"]}: {error.error["description"]}'
     }), error.status_code
 
 
