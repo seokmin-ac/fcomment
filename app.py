@@ -14,6 +14,10 @@ app = Flask(__name__)
 CORS(app)
 setup_db(app, os.environ['DATABASE_URL'])
 
+@app.route('/')
+def index():
+    return 'Hello!'
+
 
 @app.route('/articles')
 def get_articles():
