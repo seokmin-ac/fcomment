@@ -71,6 +71,20 @@ def check_permissions(permission, payload):
         }, 403)
     return True
 
+def check_client_credentials(payload):
+    if 'gty' not in payload:
+        raise AuthError({
+        'code': 'invalid_claims',
+        'description': 'Grant type is not provided'
+        }, 400)
+
+    if payload['gty'] != 'client-credentials':
+        raise AuthError({
+        'code': 'invalid_claims',
+        'description': 'Grant type is not a client credentials'
+        }, 403)
+    return True
+
 '''
 @INPUTS
     token: a json web token (string)
@@ -158,3 +172,17 @@ def requires_auth(permission=''):
 
         return wrapper
     return requires_auth_decorator
+
+
+def client_credentials():
+    def client_credentials_decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token = get_token_auth_header()
+            payload = verify_decode_jwt(token)
+
+            check_client_credentials(payload)
+
+            return f(payload, *args, **kwargs)
+        return wrapper
+    return client_credentials_decorator
