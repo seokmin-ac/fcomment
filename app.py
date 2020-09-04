@@ -59,6 +59,7 @@ def delete_articles(payload, id):
         abort(404)
 
     try:
+        # TODO: Remove all related comments with a given article.
         found.delete()
         return jsonify({
             'success': True,
