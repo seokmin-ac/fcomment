@@ -18,7 +18,22 @@ def db_rollback():
     db.session.close()
 
 
-class Article(db.Model):
+class DBInterface:
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+    def update(self):
+        db.session.commit()
+
+
+class Article(db.Model, DBInterface):
     __tablename__ = 'articles'
 
     id = Column(String, primary_key=True)
@@ -29,7 +44,7 @@ class Article(db.Model):
         }
 
 
-class Comment(db.Model):
+class Comment(db.Model, DBInterface):
     __tablename__ = 'comments'
 
     id = Column(Integer, primary_key=True)
