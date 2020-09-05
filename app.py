@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 
@@ -71,14 +71,33 @@ def delete_articles(payload, id):
         raise UnprocessableEntity(description='Cannot remove a given article.')
 
 
-@app.route('/articles/<string:id>')
+@app.route('/articles/<string:id>/comments')
 def get_comments_from_article(id):
-    pass
+    comments = Comment.query.filter_by(article=id).all()
+    return jsonify({
+        'success': True,
+        'count': len(comments),
+        'comments': [c.format() for c in comments]
+    })
 
 
-@app.route('/articles/<string:id>', methods=['POST'])
-def post_comment_to_article(id):
-    pass
+@app.route('/articles/<string:id>/comments', methods=['POST'])
+@requires_auth()
+def post_comment_to_article(payload, id):
+    try:
+        comment = Comment(
+            user=payload['sub'],
+            content=request.json['content'],
+            article=id,
+            parent=None
+        )
+        comment.insert()
+        return jsonify({
+            'success': True,
+            'id': comment.id
+        })
+    except Exception:
+        raise UnprocessableEntity(description=f'Cannot add comment to article {id}')
 
 
 @app.route('/comments')
