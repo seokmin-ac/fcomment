@@ -54,7 +54,7 @@ Add an article to the database. It's recommended to be fetched automatically whe
 _NOTICE_: It assumes you are fetching this endpoint for automatic page generation. Thus it allows to fetch to existing id and it ignores internally.
 
 - **Permission**
-  - Client credentials
+  - `post:articles`
 - **Request Body**
   - `id`: Identifier for articles. It should be unique so it is recommened to be URL or slug for itself.
 - **Returns**
@@ -72,7 +72,7 @@ _NOTICE_: It assumes you are fetching this endpoint for automatic page generatio
 Remove an article from the database. Comments related with the articles will be removed too.
 
 - **Permission**
-  - Client credentials
+  - `delete:articles`
 - **Returns**
   - `id: string`: ID for a removed article.
 - **Sample Returns**

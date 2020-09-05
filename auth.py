@@ -58,6 +58,9 @@ it should raise an AuthError if the requested permission string is not in the pa
 return true otherwise
 '''
 def check_permissions(permission, payload):
+    if permission is None or permission == '':
+        return True
+        
     if 'permissions' not in payload:
         raise AuthError({
             'code': 'invalid_claims',
