@@ -1,5 +1,5 @@
 import sys
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -48,6 +48,7 @@ class Comment(db.Model, DBInterface):
     __tablename__ = 'comments'
 
     id = Column(Integer, primary_key=True)
+    datetime = Column(DateTime)
     user = Column(String)
     content = Column(String)
     article = Column(String, ForeignKey('articles.id'))
@@ -57,7 +58,15 @@ class Comment(db.Model, DBInterface):
         return {
             'id': self.id,
             'user': self.user,
+            'datetime': self.datetime,
             'content': self.content,
             'article': self.article,
             'parent': self.parent
         }
+
+    def recursive_format(self):
+        ret = self.format()
+        replies = Comment.query.filter_by(parent=self.id).all()
+        if replies != []:
+            ret['replies'] = [r.recursive_format() for r in replies]
+        return ret

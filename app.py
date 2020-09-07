@@ -1,4 +1,5 @@
 import os
+import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound, UnprocessableEntity
@@ -73,11 +74,12 @@ def delete_articles(payload, id):
 
 @app.route('/articles/<string:id>/comments')
 def get_comments_from_article(id):
-    comments = Comment.query.filter_by(article=id).all()
+    comments_from_article = Comment.query.filter_by(article=id)
+    recursive_comments = comments_from_article.filter_by(parent=None).all()
     return jsonify({
         'success': True,
-        'count': len(comments),
-        'comments': [c.format() for c in comments]
+        'count': comments_from_article.count(),
+        'comments': [c.recursive_format() for c in recursive_comments]
     })
 
 
@@ -87,6 +89,7 @@ def post_comment_to_article(payload, id):
     try:
         comment = Comment(
             user=payload['sub'],
+            datetime=datetime.datetime.utcnow(),
             content=request.json['content'],
             article=id,
             parent=None
@@ -111,8 +114,26 @@ def get_comment(id):
 
 
 @app.route('/comments/<int:id>', methods=['POST'])
-def post_reply(id):
-    pass
+@requires_auth()
+def post_reply(payload, id):
+    parent = Comment.query.filter_by(id=id).one_or_none()
+    if parent is None:
+        raise NotFound(description='Cannot find a comment to reply.')
+    try:
+        comment = Comment(
+            user=payload['sub'],
+            datetime=datetime.datetime.utcnow(),
+            content=request.json['content'],
+            article=parent.article,
+            parent=id
+        )
+        comment.insert()
+        return jsonify({
+            'success': True,
+            'id': comment.id
+        })
+    except Exception:
+        raise UnprocessableEntity(description=f'Cannot add comment to article {id}')
 
 
 @app.route('/comments/<int:id>', methods=['PATCH'])
