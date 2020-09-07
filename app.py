@@ -155,7 +155,7 @@ def edit_comment(payload, id):
     try:
         check_permissions('admin', payload)
     except AuthError:
-        if comment.user != payload.sub:
+        if comment.user != payload['sub']:
             raise AuthError({
                 'code': 'unauthorized',
                 'description': 'Requestor is neither a administrator nor author of the comment.'
