@@ -11,7 +11,7 @@ except Exception:
     pass
 
 from models import setup_db, Article, Comment, db_rollback
-from auth import AuthError, requires_auth
+from auth import AuthError, requires_auth, check_permissions
 
 app = Flask(__name__)
 CORS(app)
@@ -146,11 +146,34 @@ def post_reply(payload, id):
 
 
 @app.route('/comments/<int:id>', methods=['PATCH'])
-def edit_comment(id):
-    pass
+@requires_auth()
+def edit_comment(payload, id):
+    comment = Comment.query.filter_by(id=id).one_or_none()
+    if comment is None:
+        raise NotFound(description='Cannot find a comment to edit.')
+
+    try:
+        check_permissions('admin', payload)
+    except AuthError:
+        if comment.user != payload.sub:
+            raise AuthError({
+                'code': 'unauthorized',
+                'description': 'Requestor is neither a administrator nor author of the comment.'
+            }, 403)
+    
+    try:
+        comment.content = request.json['content']
+        comment.update()
+        return jsonify({
+            'success': True,
+            'id': id
+        })
+    except Exception:
+        raise UnprocessableEntity(description='Cannot edit the comment.')
 
 
 @app.route('/comments/<int:id>', methods=['DELETE'])
+@requires_auth()
 def delete_comment(id):
     pass
 
