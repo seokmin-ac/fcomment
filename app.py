@@ -18,6 +18,15 @@ CORS(app)
 setup_db(app, os.environ['DATABASE_URL'])
 
 
+# Check is the token valid
+@app.route('/auth', methods=['POST'])
+@requires_auth()
+def check_authority(payload):
+    return jsonify({
+        'success': True
+    })
+
+
 @app.route('/articles')
 def get_articles():
     articles = Article.query.all()
