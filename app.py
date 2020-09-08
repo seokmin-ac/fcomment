@@ -5,13 +5,20 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 
+# To load .env file for local development.
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except Exception:
     pass
 
-from models import Article, Comment, db_setup, db_rollback, db_exists
+from models import (
+    Article,
+    Comment,
+    User,
+    db_setup,
+    db_rollback
+)
 from auth import AuthError, requires_auth, check_permissions
 
 COMMENTS_PER_PAGE = 20
@@ -19,6 +26,11 @@ COMMENTS_PER_PAGE = 20
 
 def get_current_utc():
     return utc.localize(datetime.datetime.utcnow())
+
+
+def raise_db_error(description=''):
+    db_rollback()
+    raise UnprocessableEntity(description=description)
 
 
 app = Flask(__name__)
@@ -33,6 +45,67 @@ def check_authority(payload):
     return jsonify({
         'success': True
     })
+
+
+@app.route('/users')
+def get_users():
+    users = User.query.all()
+    return jsonify({
+        'success': True,
+        'users': [u.format() for u in users]
+    })
+
+
+@app.route('/users', methods=['POST'])
+@requires_auth()
+def add_user(payload):
+    if payload['sub'] != request.json['user']:
+        raise AuthError({
+            'code': 'unauthorized',
+            'description': 'Requestor is not equal to given JWT.'
+        }, 403)
+
+    try:
+        user = User(
+            id=request.json['user'],
+            nickname=request.json['nickname'],
+            picture=request.json['picture']
+        )
+        user.insert()
+
+        return jsonify({
+            'success': True,
+            'id': user.id
+        })
+    except Exception:
+        raise_db_error(description='Cannot add user')
+
+
+@app.route('/users', methods=['PATCH'])
+@requires_auth()
+def edit_user(payload):
+    if payload['sub'] != request.json['user']:
+        raise AuthError({
+            'code': 'unauthorized',
+            'description': 'Requestor is not equal to given JWT.'
+        }, 403)
+
+    user = User.query.filter_by(id=request.json['user']).one_or_none()
+    if user is None:
+        raise NotFound(description='Cannot find a given user.')
+    
+    try:
+        user.id=request.json['user']
+        user.nickname=request.json['nickname']
+        user.picture=request.json['picture']
+        user.update()
+
+        return jsonify({
+            'success': True,
+            'id': user.id
+        })
+    except Exception:
+        raise_db_error('Cannot edit user')
 
 
 @app.route('/articles')
@@ -66,8 +139,7 @@ def post_articles(payload):
             'id': article.id
         })
     except Exception:
-        db_rollback()
-        raise UnprocessableEntity(description='Cannot add an article.')
+        raise_db_error(description='Cannot add an article.')
 
 
 @app.route('/articles/<string:id>', methods=['DELETE'])
@@ -87,8 +159,7 @@ def delete_articles(payload, id):
             'id': id
         })
     except Exception:
-        db_rollback()
-        raise UnprocessableEntity(description='Cannot remove a given article.')
+        raise_db_error(description='Cannot remove a given article.')
 
 
 @app.route('/articles/<string:id>/comments')
@@ -119,7 +190,7 @@ def post_comment_to_article(payload, id):
             'id': comment.id
         })
     except Exception:
-        raise UnprocessableEntity(description=f'Cannot add comment to article {id}')
+        raise_db_error(description=f'Cannot add comment to article {id}')
 
 
 @app.route('/comments')
@@ -171,7 +242,7 @@ def post_reply(payload, id):
             'id': comment.id
         })
     except Exception:
-        raise UnprocessableEntity(description=f'Cannot add comment to article {id}')
+        raise_db_error(description=f'Cannot add comment to article {id}')
 
 
 @app.route('/comments/<int:id>', methods=['PATCH'])
@@ -198,7 +269,7 @@ def edit_comment(payload, id):
             'id': id
         })
     except Exception:
-        raise UnprocessableEntity(description='Cannot edit the comment.')
+        raise_db_error(description='Cannot edit the comment.')
 
 
 @app.route('/comments/<int:id>', methods=['DELETE'])
@@ -228,7 +299,7 @@ def delete_comment(payload, id):
             'id': id
         })
     except Exception:
-        raise UnprocessableEntity(description='Cannot edit the comment.')
+        raise_db_error(description='Cannot edit the comment.')
 
 
 @app.errorhandler(NotFound)

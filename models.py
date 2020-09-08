@@ -60,7 +60,7 @@ class Comment(db.Model, DBInterface):
 
     id = Column(Integer, primary_key=True)
     datetime = Column(DateTime)
-    user = Column(String)
+    user = Column(String, ForeignKey('users.id'))
     content = Column(String)
     article = Column(String, ForeignKey('articles.id'))
     parent = Column(Integer, ForeignKey('comments.id'))
@@ -108,3 +108,18 @@ class Comment(db.Model, DBInterface):
         if replies != []:
             ret['replies'] = [r.recursive_format() for r in replies]
         return ret
+
+
+class User(db.Model, DBInterface):
+    __tablename__ = 'users'
+
+    id = Column(String, primary_key=True)
+    nickname = Column(String)
+    picture = Column(String)
+
+    def format(self):
+        return {
+            'id': self.id,
+            'nickname': self.nickname,
+            'picture': self.picture
+        }
