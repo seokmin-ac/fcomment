@@ -66,7 +66,7 @@ class Comment(db.Model, DBInterface):
 
     def recursive_format(self):
         ret = self.format()
-        replies = Comment.query.filter_by(parent=self.id).all()
+        replies = Comment.query.filter_by(parent=self.id).order_by(Comment.datetime).all()
         if replies != []:
             ret['replies'] = [r.recursive_format() for r in replies]
         return ret

@@ -13,6 +13,8 @@ except Exception:
 from models import setup_db, Article, Comment, db_rollback
 from auth import AuthError, requires_auth, check_permissions
 
+COMMENTS_PER_PAGE = 20
+
 app = Flask(__name__)
 CORS(app)
 setup_db(app, os.environ['DATABASE_URL'])
@@ -84,7 +86,7 @@ def delete_articles(payload, id):
 @app.route('/articles/<string:id>/comments')
 def get_comments_from_article(id):
     comments_from_article = Comment.query.filter_by(article=id)
-    recursive_comments = comments_from_article.filter_by(parent=None).all()
+    recursive_comments = comments_from_article.filter_by(parent=None).order_by(Comment.datetime).all()
     return jsonify({
         'success': True,
         'count': comments_from_article.count(),
@@ -114,12 +116,24 @@ def post_comment_to_article(payload, id):
 
 @app.route('/comments')
 def get_comments():
-    pass
+    page = request.args.get('page', 1, type=int)
+    comments = Comment.query.order_by(Comment.datetime).paginate(page=page, per_page=COMMENTS_PER_PAGE).query.all()
+    return jsonify({
+        'success': True,
+        'comments': [c.format() for c in comments]
+    })
 
 
 @app.route('/comments/<int:id>')
 def get_comment(id):
-    pass
+    comment = Comment.query.filter_by(id=id).one_or_none()
+    if comment is None:
+        raise NotFound(description='Cannot find having given ID.')
+
+    return jsonify({
+        'success': True,
+        'comment': comment.format()
+    })
 
 
 @app.route('/comments/<int:id>', methods=['POST'])
