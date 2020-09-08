@@ -1,5 +1,6 @@
 import os
 import datetime
+from pytz import utc
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound, UnprocessableEntity
@@ -14,6 +15,11 @@ from models import setup_db, Article, Comment, db_rollback
 from auth import AuthError, requires_auth, check_permissions
 
 COMMENTS_PER_PAGE = 20
+
+
+def get_current_utc():
+    return utc.localize(datetime.datetime.utcnow())
+
 
 app = Flask(__name__)
 CORS(app)
@@ -100,7 +106,7 @@ def post_comment_to_article(payload, id):
     try:
         comment = Comment(
             user=payload['sub'],
-            datetime=datetime.datetime.utcnow(),
+            datetime=get_current_utc(),
             content=request.json['content'],
             article=id,
             parent=None
@@ -145,7 +151,7 @@ def post_reply(payload, id):
     try:
         comment = Comment(
             user=payload['sub'],
-            datetime=datetime.datetime.utcnow(),
+            datetime=get_current_utc(),
             content=request.json['content'],
             article=parent.article,
             parent=id
