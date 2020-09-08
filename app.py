@@ -11,7 +11,7 @@ try:
 except Exception:
     pass
 
-from models import setup_db, Article, Comment, db_rollback
+from models import Article, Comment, db_setup, db_rollback, db_exists
 from auth import AuthError, requires_auth, check_permissions
 
 COMMENTS_PER_PAGE = 20
@@ -23,7 +23,7 @@ def get_current_utc():
 
 app = Flask(__name__)
 CORS(app)
-setup_db(app, os.environ['DATABASE_URL'])
+db_setup(app, os.environ['DATABASE_URL'])
 
 
 # Check is the token valid
@@ -78,7 +78,9 @@ def delete_articles(payload, id):
         raise NotFound(description='Cannot find a given article.')
 
     try:
-        # TODO: Remove all related comments with a given article.
+        # Remove all related comments with a given article.
+        map(lambda c: c.delete(), Comment.query.filter_by(article=id).all())
+
         found.delete()
         return jsonify({
             'success': True,
@@ -95,7 +97,7 @@ def get_comments_from_article(id):
     recursive_comments = comments_from_article.filter_by(parent=None).order_by(Comment.datetime).all()
     return jsonify({
         'success': True,
-        'count': comments_from_article.count(),
+        'count': comments_from_article.filter_by(removed=False).count(),
         'comments': [c.recursive_format() for c in recursive_comments]
     })
 
@@ -123,7 +125,10 @@ def post_comment_to_article(payload, id):
 @app.route('/comments')
 def get_comments():
     page = request.args.get('page', 1, type=int)
-    comments = Comment.query.order_by(Comment.datetime).paginate(page=page, per_page=COMMENTS_PER_PAGE).query.all()
+    comments = (Comment.query.filter_by(removed=False)
+        .order_by(Comment.datetime).paginate(page=page, per_page=COMMENTS_PER_PAGE)
+        .query.all()
+    )
     return jsonify({
         'success': True,
         'comments': [c.format() for c in comments]
@@ -148,9 +153,13 @@ def post_reply(payload, id):
     parent = Comment.query.filter_by(id=id).one_or_none()
     if parent is None:
         raise NotFound(description='Cannot find a comment to reply.')
+    if parent.removed:
+        raise UnprocessableEntity(description='Cannot reply to removed comment.')
+
     try:
         comment = Comment(
             user=payload['sub'],
+            removed=False,
             datetime=get_current_utc(),
             content=request.json['content'],
             article=parent.article,
@@ -172,14 +181,14 @@ def edit_comment(payload, id):
     if comment is None:
         raise NotFound(description='Cannot find a comment to edit.')
 
-    try:
-        check_permissions('admin', payload)
-    except AuthError:
-        if comment.user != payload['sub']:
-            raise AuthError({
-                'code': 'unauthorized',
-                'description': 'Requestor is neither a administrator nor author of the comment.'
-            }, 403)
+    if comment.removed:
+        raise UnprocessableEntity(description='Cannot edit removed comment.')
+
+    if comment.user != payload['sub']:
+        raise AuthError({
+            'code': 'unauthorized',
+            'description': 'Requestor is not an author of the comment.'
+        }, 403)
     
     try:
         comment.content = request.json['content']
@@ -194,8 +203,32 @@ def edit_comment(payload, id):
 
 @app.route('/comments/<int:id>', methods=['DELETE'])
 @requires_auth()
-def delete_comment(id):
-    pass
+def delete_comment(payload, id):
+    comment = Comment.query.filter_by(id=id).one_or_none()
+    if comment is None:
+        raise NotFound(description='Cannot find a comment to remove.')
+
+    if comment.removed:
+        raise UnprocessableEntity(description='Cannot remove already removed comment.')
+    
+    try:
+        check_permissions('delete:comments', payload)
+    except AuthError:
+        if comment.user != payload['sub']:
+            raise AuthError({
+                'code': 'unauthorized',
+                'description': 'Requestor is neither a administrator nor author of the comment.'
+            }, 403)
+
+    try:
+        comment.delete()
+
+        return jsonify({
+            'success': True,
+            'id': id
+        })
+    except Exception:
+        raise UnprocessableEntity(description='Cannot edit the comment.')
 
 
 @app.errorhandler(NotFound)

@@ -1,10 +1,17 @@
 import sys
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    ForeignKey,
+    DateTime,
+    Boolean
+)
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-def setup_db(app, database_path):
+def db_setup(app, database_path):
     app.config["SQLALCHEMY_DATABASE_URI"] = database_path
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.app = app
@@ -16,6 +23,10 @@ def db_rollback():
     db.session.rollback()
     print(sys.exc_info())
     db.session.close()
+
+
+def db_exists(query):
+    return db.session.query(query.exists()).scalar()
 
 
 class DBInterface:
@@ -53,16 +64,43 @@ class Comment(db.Model, DBInterface):
     content = Column(String)
     article = Column(String, ForeignKey('articles.id'))
     parent = Column(Integer, ForeignKey('comments.id'))
+    removed = Column(Boolean)
+
+
+    def delete(self):
+        if db_exists(Comment.query.filter_by(parent=self.id)):
+            self.removed = True
+            self.content = None
+            self.user = None
+            self.update()
+        else:
+            super().delete()
+            if self.parent is not None:
+                parent_comment = Comment.query.filter_by(id=self.parent).one_or_none()
+                if (parent_comment.removed and
+                    not db_exists(Comment.query.filter_by(parent=parent_comment.id))):
+                    parent_comment.delete()
+
 
     def format(self):
+        if self.removed:
+            return {
+                'id': self.id,
+                'removed': True,
+                'datetime': self.datetime,
+                'article': self.article,
+                'parent': self.parent
+            }
         return {
             'id': self.id,
+            'removed': False,
             'user': self.user,
             'datetime': self.datetime,
             'content': self.content,
             'article': self.article,
             'parent': self.parent
         }
+
 
     def recursive_format(self):
         ret = self.format()
