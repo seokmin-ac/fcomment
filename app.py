@@ -58,16 +58,27 @@ def get_users():
 
 @app.route('/users', methods=['POST'])
 @requires_auth()
-def add_user(payload):
-    if payload['sub'] != request.json['user']:
+def update_user(payload):
+    if payload['sub'] != request.json['id']:
         raise AuthError({
             'code': 'unauthorized',
-            'description': 'Requestor is not equal to given JWT.'
+            'description': 'Requestor is not a user to update.'
         }, 403)
 
     try:
+        user = User.query.filter_by(id=request.json['id']).one_or_none()
+        # Already exists
+        if (user is not None):
+            user.nickname = request.json['nickname']
+            user.picture = request.json['picture']
+            user.update()
+            return jsonify({
+                'success': True,
+                'id': request.json['id']
+            })
+
         user = User(
-            id=request.json['user'],
+            id=request.json['id'],
             nickname=request.json['nickname'],
             picture=request.json['picture']
         )
@@ -78,34 +89,7 @@ def add_user(payload):
             'id': user.id
         })
     except Exception:
-        raise_db_error(description='Cannot add user')
-
-
-@app.route('/users', methods=['PATCH'])
-@requires_auth()
-def edit_user(payload):
-    if payload['sub'] != request.json['user']:
-        raise AuthError({
-            'code': 'unauthorized',
-            'description': 'Requestor is not equal to given JWT.'
-        }, 403)
-
-    user = User.query.filter_by(id=request.json['user']).one_or_none()
-    if user is None:
-        raise NotFound(description='Cannot find a given user.')
-    
-    try:
-        user.id=request.json['user']
-        user.nickname=request.json['nickname']
-        user.picture=request.json['picture']
-        user.update()
-
-        return jsonify({
-            'success': True,
-            'id': user.id
-        })
-    except Exception:
-        raise_db_error('Cannot edit user')
+        raise_db_error(description='Cannot update user')
 
 
 @app.route('/articles')
@@ -182,7 +166,8 @@ def post_comment_to_article(payload, id):
             datetime=get_current_utc(),
             content=request.json['content'],
             article=id,
-            parent=None
+            parent=None,
+            removed=False
         )
         comment.insert()
         return jsonify({
