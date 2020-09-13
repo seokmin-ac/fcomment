@@ -77,10 +77,13 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
 
 There are two roles for fcomment.
 
-- Admin
-  Admin users can post or remove articles and comments.
-- Qualified
-  Qualified users can post or edit comments.
+### Admin
+
+Admin users can post or remove articles and comments.
+
+### Qualified
+
+Qualified users can post or edit comments.
 
 ## Testing
 
