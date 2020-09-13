@@ -1,0 +1,4 @@
+dropdb fcomment_test
+createdb fcomment_test
+psql fcomment_test < test.psql --quiet
+python test.py

@@ -5,13 +5,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 
-# To load .env file for local development.
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
-
 from models import (
     Article,
     Comment,
@@ -194,7 +187,7 @@ def get_comments():
 @app.route('/comments/<int:id>')
 def get_comment(id):
     comment = Comment.query.filter_by(id=id).one_or_none()
-    if comment is None:
+    if comment is None or comment.removed:
         raise NotFound(description='Cannot find having given ID.')
 
     return jsonify({

@@ -87,6 +87,18 @@ Qualified users can post or edit comments.
 
 ## Testing
 
+```shell
+./test
+```
+
+If provided tokens are expired, you need to get new tokens by yourself. Following emails and passwords are accounts for testing.
+
+| email            | Password    | Role      |
+| ---------------- | ----------- | --------- |
+| manager@test.com | manager123! | admin     |
+| barista@test.com | barista123! | qualified |
+| test@test.com    | test123!    | none      |
+
 ## Endpoints
 
 ### `POST /auth`
