@@ -35,7 +35,8 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
 3. Go to `{YOUR_API}` > `Permissions` window and add following three permissions.
    - **post:articles**: It allows the user can add articles. It will be granted to client credential token.
    - **delete:articles**: It allows the user can remove articles. It will be granted to client credential token.
-   - **delete:comments**: It allows the user can remove comments. It will be granted to admin user.
+   - **post:comments**: It allows the user can add or edit comments. It will be granted to qualified users.
+   - **delete:comments**: It allows the user can remove comments. It will be granted to an admin user.
 4. Go to `{YOUR_API}` > `Machine to Machine Applications` window. You may see the auto generated application named `{YOUR_API} (Test Application)` and it would be authorized. Click uncollapse button looks like symbol ">" and check `post:articles` and `delete:articles`.
 5. Click update button to submit.
 
@@ -71,6 +72,15 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
    ```shell
    python main.py
    ```
+
+## Roles
+
+There are two roles for fcomment.
+
+- Admin
+  Admin users can post or remove articles and comments.
+- Qualified
+  Qualified users can post or edit comments.
 
 ## Testing
 
@@ -117,7 +127,7 @@ Get all users.
 Update or add a given user.
 
 - **Permission**
-  - longin only
+  - login only
 - **Request Body**
   - `id`: ID of a user. It is a `sub` parameter of JWT.
   - `nickname`: Nickname of the user.
@@ -256,7 +266,7 @@ Get all comments for a given article.
 Add a comment to a given article.
 
 - **Permission**
-  - login only
+  - `post:comments`
 - **Request Body**
   - `content`: A content of comment.
 - **Returns**
@@ -344,7 +354,7 @@ Get a comment by given id.
 Add a reply for a given comment.
 
 - **Permission**
-  - login only
+  - `post:comments`
 - **Request Body**
   - `content`: A content of comment.
 - **Returns**
