@@ -158,7 +158,7 @@ def get_comments_from_article(id):
 
 
 @app.route('/articles/<string:id>/comments', methods=['POST'])
-@requires_auth()
+@requires_auth('post:comments')
 def post_comment_to_article(payload, id):
     try:
         comment = Comment(
@@ -204,7 +204,7 @@ def get_comment(id):
 
 
 @app.route('/comments/<int:id>', methods=['POST'])
-@requires_auth()
+@requires_auth('post:comments')
 def post_reply(payload, id):
     parent = Comment.query.filter_by(id=id).one_or_none()
     if parent is None:
@@ -231,7 +231,7 @@ def post_reply(payload, id):
 
 
 @app.route('/comments/<int:id>', methods=['PATCH'])
-@requires_auth()
+@requires_auth('post:comments')
 def edit_comment(payload, id):
     comment = Comment.query.filter_by(id=id).one_or_none()
     if comment is None:
