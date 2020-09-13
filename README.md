@@ -10,6 +10,8 @@ This is a capstone project for Udacity FSND.
 
 There are some comment hosting service like as [Disqus](https://disqus.com/). It offers strong functionality but there are some restriction for design. So I want to make a very simple API for hosting comments.
 
+Full stack demo: https://fcomment-sample.netlify.app
+
 ## **Deployment**
 
 1. Fork or clone this repository.
@@ -98,6 +100,14 @@ If provided tokens are expired, you need to get new tokens by yourself. Followin
 | manager@test.com | manager123! | admin     |
 | barista@test.com | barista123! | qualified |
 | test@test.com    | test123!    | none      |
+
+| Key            | Value                                                            |
+| -------------- | ---------------------------------------------------------------- |
+| Domain         | dev-vztcxiti.us.auth0.com                                        |
+| Audience       | fcomment                                                         |
+| Client ID      | gv5Krf3lP54qHnK59seHecv4qZhLY6G7                                 |
+| API Identifier | rnHpgDR6jjEztHRVpLYZKEg8FHPdZRp8                                 |
+| Client Secret  | un6B0T-B65BxI9zgYh-zxegNqOKcpZz2vin2ePlx9mVtkmaWMBuynrxLDhiTBzBZ |
 
 ## Endpoints
 
