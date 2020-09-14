@@ -75,6 +75,7 @@ Full stack demo: https://fcomment-sample.netlify.app
    - **DATABASE_URL**: Database URL for your PostgreSQL table.
    - **AUTH_DOMAIN**: A domain of your Auth0 account.
    - **AUTH_AUDIENCE**: An identifier of API what you created.
+   - **CORS_DOMAIN**: A domain you wants to allow CORS.
 
 5. Now you can run the project with following command.
 
