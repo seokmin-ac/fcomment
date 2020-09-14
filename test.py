@@ -11,16 +11,16 @@ import json
 
 from app import app
 
+
 class FCommentTestCase(unittest.TestCase):
     def setUp(self):
         self.app = app
         self.client = self.app.test_client
 
-
     def tearDown(self):
         # Executed after reach test
         pass
-    
+
     # POST /auth
     def test_check_auth_without_token(self):
         res = self.client().post('/auth')
@@ -28,13 +28,15 @@ class FCommentTestCase(unittest.TestCase):
 
     def test_check_auth_with_expired_token(self):
         res = self.client().post('/auth', headers={
-            'Authorization': f'Bearer {os.environ["JWT_CLIENT_CREDENTIAL_EXPIRED"]}'
+            'Authorization':
+                f'Bearer {os.environ["JWT_CLIENT_CREDENTIAL_EXPIRED"]}'
         })
         self.assertEqual(res.status_code, 401)
 
     def test_check_auth_with_valid_token(self):
         res = self.client().post('/auth', headers={
-            'Authorization': f'Bearer {os.environ["JWT_CLIENT_CREDENTIAL_VALID"]}'
+            'Authorization':
+                f'Bearer {os.environ["JWT_CLIENT_CREDENTIAL_VALID"]}'
         })
         self.assertEqual(res.status_code, 200)
 
@@ -55,8 +57,7 @@ class FCommentTestCase(unittest.TestCase):
         testUser['picture'] = ''
 
         # Commit edit.
-        res = self.client().post('/users',
-            headers={
+        res = self.client().post('/users', headers={
                 'Authorization': f'Bearer {os.environ["JWT_TEST"]}'
             },
             json=testUser
@@ -81,8 +82,7 @@ class FCommentTestCase(unittest.TestCase):
     # POST /articles & DELETE /articles/:id
     def test_post_and_delete_articles(self):
         # Post article
-        res = self.client().post('/articles', 
-            headers={
+        res = self.client().post('/articles', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             },
             json={
@@ -96,8 +96,7 @@ class FCommentTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         # Remove article
-        res = self.client().delete('/articles/new-post', 
-            headers={
+        res = self.client().delete('/articles/new-post', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             })
         data = json.loads(res.data)
@@ -106,8 +105,7 @@ class FCommentTestCase(unittest.TestCase):
 
     # RBAC test for POST /articles
     def test_post_article_with_inappropriate_role(self):
-        res = self.client().post('/articles', 
-            headers={
+        res = self.client().post('/articles', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             },
             json={
@@ -117,8 +115,7 @@ class FCommentTestCase(unittest.TestCase):
 
     # RBAC test for DELETE /articles/:id
     def test_delete_article_with_inappropriate_role(self):
-        res = self.client().delete('/articles/new-beginnings', 
-            headers={
+        res = self.client().delete('/articles/new-beginnings', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             })
         self.assertEqual(res.status_code, 403)
@@ -134,8 +131,7 @@ class FCommentTestCase(unittest.TestCase):
     # POST /articles/:id/comments
     def test_post_comment_to_article(self):
         # Post a comment
-        res = self.client().post('/articles/my-second-post/comments', 
-            headers={
+        res = self.client().post('/articles/my-second-post/comments', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             },
             json={
@@ -151,8 +147,7 @@ class FCommentTestCase(unittest.TestCase):
         self.assertEqual(data['count'], 1)
 
     def test_post_comment_to_article_with_unqualified(self):
-        res = self.client().post('/articles/my-second-post/comments', 
-            headers={
+        res = self.client().post('/articles/my-second-post/comments', headers={
                 'Authorization': f'Bearer {os.environ["JWT_TEST"]}'
             },
             json={
@@ -186,8 +181,7 @@ class FCommentTestCase(unittest.TestCase):
     # POST /comments/:id
     def test_post_reply(self):
         # Post a comment.
-        res = self.client().post('articles/hello-world/comments', 
-            headers={
+        res = self.client().post('articles/hello-world/comments', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             },
             json={
@@ -199,8 +193,7 @@ class FCommentTestCase(unittest.TestCase):
 
         # Post a reply.
         id = data['id']
-        res = self.client().post(f'comments/{id}', 
-            headers={
+        res = self.client().post(f'comments/{id}', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             },
             json={
@@ -211,8 +204,7 @@ class FCommentTestCase(unittest.TestCase):
 
         # Post a reply from unqualified user.
         id = data['id']
-        res = self.client().post(f'comments/{id}', 
-            headers={
+        res = self.client().post(f'comments/{id}', headers={
                 'Authorization': f'Bearer {os.environ["JWT_TEST"]}'
             },
             json={
@@ -224,8 +216,7 @@ class FCommentTestCase(unittest.TestCase):
     # PATCH /comments/:id
     def test_edit_comment(self):
         # Edit a comment.
-        res = self.client().patch('comments/21', 
-            headers={
+        res = self.client().patch('comments/21', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             },
             json={
@@ -241,8 +232,7 @@ class FCommentTestCase(unittest.TestCase):
 
     def test_edit_comment_with_other_account(self):
         # Edit a comment.
-        res = self.client().patch('comments/21', 
-            headers={
+        res = self.client().patch('comments/21', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             },
             json={
@@ -254,8 +244,7 @@ class FCommentTestCase(unittest.TestCase):
     # DELETE /comments
     def test_delete_reply(self):
         # Post a comment.
-        res = self.client().post('articles/hello-world/comments', 
-            headers={
+        res = self.client().post('articles/hello-world/comments', headers={
                 'Authorization': f'Bearer {os.environ["JWT_BARISTA"]}'
             },
             json={
@@ -267,8 +256,7 @@ class FCommentTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
         # Post a reply.
-        res = self.client().post(f'comments/{comment_id}', 
-            headers={
+        res = self.client().post(f'comments/{comment_id}', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             },
             json={
@@ -278,15 +266,14 @@ class FCommentTestCase(unittest.TestCase):
         data = json.loads(res.data)
         reply_id = data['id']
         self.assertEqual(res.status_code, 200)
-        
+
         res = self.client().get('articles/hello-world/comments')
         data = json.loads(res.data)
         cnt_1 = data['count']
         self.assertEqual(res.status_code, 200)
 
         # Delete a comment.
-        res = self.client().delete(f'comments/{comment_id}', 
-            headers={
+        res = self.client().delete(f'comments/{comment_id}', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             }
         )
@@ -296,14 +283,15 @@ class FCommentTestCase(unittest.TestCase):
         res = self.client().get('/articles/hello-world/comments')
         data = json.loads(res.data)
         cnt_2 = data['count']
-        removed_comment = next(c for c in data['comments'] if c['id'] == comment_id)
+        removed_comment = next(
+            c for c in data['comments'] if c['id'] == comment_id
+        )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(cnt_1 - 1, cnt_2)
         self.assertTrue(removed_comment['removed'])
 
         # Delete a reply.
-        res = self.client().delete(f'comments/{reply_id}', 
-            headers={
+        res = self.client().delete(f'comments/{reply_id}', headers={
                 'Authorization': f'Bearer {os.environ["JWT_MANAGER"]}'
             }
         )
@@ -318,7 +306,9 @@ class FCommentTestCase(unittest.TestCase):
         # Check is the parent comment is also removed.
         removed_comment = None
         try:
-            removed_comment = next(c for c in data['comments'] if c['id'] == comment_id)
+            removed_comment = next(
+                c for c in data['comments'] if c['id'] == comment_id
+            )
         except Exception:
             pass
         self.assertIsNone(removed_comment)

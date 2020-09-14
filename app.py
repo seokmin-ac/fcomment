@@ -142,7 +142,10 @@ def delete_articles(payload, id):
 @app.route('/articles/<string:id>/comments')
 def get_comments_from_article(id):
     comments_from_article = Comment.query.filter_by(article=id)
-    recursive_comments = comments_from_article.filter_by(parent=None).order_by(Comment.datetime).all()
+    recursive_comments = (
+        comments_from_article.filter_by(parent=None)
+        .order_by(Comment.datetime).all()
+    )
     return jsonify({
         'success': True,
         'count': comments_from_article.filter_by(removed=False).count(),
@@ -174,9 +177,9 @@ def post_comment_to_article(payload, id):
 @app.route('/comments')
 def get_comments():
     page = request.args.get('page', 1, type=int)
-    comments = (Comment.query.filter_by(removed=False)
-        .order_by(Comment.datetime).paginate(page=page, per_page=COMMENTS_PER_PAGE)
-        .query.all()
+    comments = (
+        Comment.query.filter_by(removed=False).order_by(Comment.datetime)
+        .paginate(page=page, per_page=COMMENTS_PER_PAGE).query.all()
     )
     return jsonify({
         'success': True,
@@ -203,7 +206,9 @@ def post_reply(payload, id):
     if parent is None:
         raise NotFound(description='Cannot find a comment to reply.')
     if parent.removed:
-        raise UnprocessableEntity(description='Cannot reply to removed comment.')
+        raise UnprocessableEntity(
+            description='Cannot reply to removed comment.'
+        )
 
     try:
         comment = Comment(
@@ -238,7 +243,7 @@ def edit_comment(payload, id):
             'code': 'unauthorized',
             'description': 'Requestor is not an author of the comment.'
         }, 403)
-    
+
     try:
         comment.content = request.json['content']
         comment.update()
@@ -258,15 +263,20 @@ def delete_comment(payload, id):
         raise NotFound(description='Cannot find a comment to remove.')
 
     if comment.removed:
-        raise UnprocessableEntity(description='Cannot remove already removed comment.')
-    
+        raise UnprocessableEntity(
+            description='Cannot remove already removed comment.'
+        )
+
     try:
         check_permissions('delete:comments', payload)
     except AuthError:
         if comment.user != payload['sub']:
             raise AuthError({
                 'code': 'unauthorized',
-                'description': 'Requestor is neither a administrator nor author of the comment.'
+                'description': (
+                    'Requestor is neither an administrator nor',
+                    'author of the comment.'
+                )
             }, 403)
 
     try:

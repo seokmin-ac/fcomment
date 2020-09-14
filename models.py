@@ -11,6 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+
 def db_setup(app, database_path):
     app.config["SQLALCHEMY_DATABASE_URI"] = database_path
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -34,11 +35,9 @@ class DBInterface:
         db.session.add(self)
         db.session.commit()
 
-
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
 
     def update(self):
         db.session.commit()
@@ -66,7 +65,6 @@ class Comment(db.Model, DBInterface):
     parent = Column(Integer, ForeignKey('comments.id'))
     removed = Column(Boolean)
 
-
     def delete(self):
         if db_exists(Comment.query.filter_by(parent=self.id)):
             self.removed = True
@@ -76,11 +74,15 @@ class Comment(db.Model, DBInterface):
         else:
             super().delete()
             if self.parent is not None:
-                parent_comment = Comment.query.filter_by(id=self.parent).one_or_none()
+                parent_comment = (
+                    Comment.query.filter_by(id=self.parent)
+                    .one_or_none()
+                )
                 if (parent_comment.removed and
-                    not db_exists(Comment.query.filter_by(parent=parent_comment.id))):
+                    not db_exists(
+                        Comment.query
+                        .filter_by(parent=parent_comment.id))):
                     parent_comment.delete()
-
 
     def format(self):
         if self.removed:
@@ -101,10 +103,12 @@ class Comment(db.Model, DBInterface):
             'parent': self.parent
         }
 
-
     def recursive_format(self):
         ret = self.format()
-        replies = Comment.query.filter_by(parent=self.id).order_by(Comment.datetime).all()
+        replies = (
+            Comment.query.filter_by(parent=self.id)
+            .order_by(Comment.datetime).all()
+        )
         if replies != []:
             ret['replies'] = [r.recursive_format() for r in replies]
         return ret
