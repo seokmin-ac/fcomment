@@ -1,4 +1,5 @@
 import os
+import sys
 import datetime
 from pytz import utc
 from flask import Flask, jsonify, request
@@ -22,12 +23,13 @@ def get_current_utc():
 
 
 def raise_db_error(description=''):
+    print(sys.exc_info())
     db_rollback()
     raise UnprocessableEntity(description=description)
 
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r'*': {'origins': os.environ['PUBLIC_DOMAIN']}})
 db_setup(app, os.environ['DATABASE_URL'])
 
 

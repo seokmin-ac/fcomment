@@ -1,4 +1,3 @@
-import sys
 from sqlalchemy import (
     Column,
     String,
@@ -22,7 +21,6 @@ def db_setup(app, database_path):
 
 def db_rollback():
     db.session.rollback()
-    print(sys.exc_info())
     db.session.close()
 
 
