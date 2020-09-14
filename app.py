@@ -33,6 +33,13 @@ CORS(app, resources={r'*': {'origins': os.environ['PUBLIC_DOMAIN']}})
 db_setup(app, os.environ['DATABASE_URL'])
 
 
+@app.route('/')
+def index():
+    return jsonify({
+        'success': True
+    })
+
+
 # Check is the token valid
 @app.route('/auth', methods=['POST'])
 @requires_auth()
