@@ -4,7 +4,11 @@ import datetime
 from pytz import utc
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from werkzeug.exceptions import NotFound, UnprocessableEntity
+from werkzeug.exceptions import (
+    NotFound,
+    UnprocessableEntity,
+    InternalServerError
+)
 
 from models import (
     Article,
@@ -310,6 +314,15 @@ def not_found(error):
 
 @app.errorhandler(UnprocessableEntity)
 def unprocessable_entity(error):
+    return jsonify({
+      'success': False,
+      'error': error.code,
+      'message': error.description
+    }), error.code
+
+
+@app.errorhandler(InternalServerError)
+def internal_server_error(error):
     return jsonify({
       'success': False,
       'error': error.code,
