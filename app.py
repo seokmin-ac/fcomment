@@ -29,7 +29,7 @@ def raise_db_error(description=''):
 
 
 app = Flask(__name__)
-CORS(app, resources={r'*': {'origins': os.environ['PUBLIC_DOMAIN']}})
+CORS(app, resources={r'*': {'origins': os.environ['CORS_DOMAIN']}})
 db_setup(app, os.environ['DATABASE_URL'])
 
 
