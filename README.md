@@ -12,7 +12,7 @@ There are some comment hosting service like as [Disqus](https://disqus.com/). It
 
 Full stack demo: https://fcomment-sample.netlify.app
 
-## **Deployment**
+## Deployment
 
 1. Fork or clone this repository.
 2. Setup your [Auth0](https://auth0.com/) application.
@@ -34,7 +34,7 @@ Full stack demo: https://fcomment-sample.netlify.app
 
 1. Sign in to [Auth0](https://auth0.com/).
 2. Create an API.
-3. Go to `{YOUR_API}` > `Permissions` window and add following three permissions.
+3. Go to `{YOUR_API}` > `Permissions` window and add following four permissions.
    - **post:articles**: It allows the user can add articles. It will be granted to client credential token.
    - **delete:articles**: It allows the user can remove articles. It will be granted to client credential token.
    - **post:comments**: It allows the user can add or edit comments. It will be granted to qualified users.
@@ -51,13 +51,20 @@ Full stack demo: https://fcomment-sample.netlify.app
    cd fcomment
    ```
 
-2. Install dependencies for development.
+2. Setup your virtual environment.
+
+   ```shell
+   virtualenv env
+   source env/bin/activate
+   ```
+
+3. Install dependencies for development.
 
    ```shell
    pip install -r requirements-dev.txt
    ```
 
-3. Add a file named `.env` to root directory of the project. Local environment variables would be provided by `.env` file with `dotenv` package.
+4. Add a file named `.env` to root directory of the project. Local environment variables would be provided by `.env` file with `dotenv` package.
 
    ```
    DATABASE_URL="postgres://postgres@localhost:XXXX/XXXXX"
@@ -69,11 +76,24 @@ Full stack demo: https://fcomment-sample.netlify.app
    - **AUTH_DOMAIN**: A domain of your Auth0 account.
    - **AUTH_AUDIENCE**: An identifier of API what you created.
 
-4. Now you can run the project with following command.
+5. Now you can run the project with following command.
 
    ```shell
    python main.py
    ```
+
+## Data Modeling
+
+The schema for the database and helper methods to simplify API behavior are in [models.py](./models.py):
+
+- There are three tables created: `Article`, `Comment`, and `User`.
+- The default `Article` table has only `id` column, but it can be expanded to have metadata for articles: such as `likes_cnt`, `hits_cnt`, and so on.
+- The `Comment` table represents user comments for articles.
+- Every comments have valid foreign key for `Article`. If their articles are removed, they are also removed.
+- If the `remove` column is `true`, it means the comment is removed but it has replies. Removed comments aren't counted for total counts.
+- When a removed comment's replies are all removed, the comment is also removed automaticaly.
+- There are two ways to formating `Comment` table. A recursive way forms their replies to an `Comment` array named `replies`. A normal way just forms comments as a raw array.
+- `User` table represents data for users. It should consist of public data like as nickname and profile picture because an API to get them is exposed to public.
 
 ## Roles
 
@@ -111,24 +131,49 @@ If provided tokens are expired, you need to get new tokens by yourself. Followin
 
 ## Endpoints
 
-### `POST /auth`
+### `GET '/'`
 
-Check is the JWT is valid. If is not, it aborts 400, 401 or 403 error.
+- Index page for API.
+- **Permission**: public
+- **Returns**: None
+- **Sample Request**:
+  ```shell
+  curl -X GET http://localhost:5000"
+  ```
+- **Sample Returns**:
+  ```jsonc
+  {
+    "success": true
+  }
+  ```
 
-- **Permission**
-  - login only
-- **Returns**
-  - None
+### `POST '/auth'`
 
-### `GET /users`
+- Check is the JWT is valid. If is not, it aborts 400, 401, or 403 error.
+- **Permission**: login only
+- **Returns**: None
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/auth -H "Authorization: Bearer <ACCESS_TOKEN>"
+  ```
+- **Sample Returns**:
+  ```jsonc
+  {
+    "success": true
+  }
+  ```
 
-Get all users.
+### `GET '/users'`
 
-- **Permission**
-  - public
-- **Returns**
+- Get all users.
+- **Permission**: public
+- **Returns**:
   - `users: [User]`: List of users.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X GET http://localhost:5000/users
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -147,19 +192,23 @@ Get all users.
   }
   ```
 
-### `POST /users`
+### `POST '/users'`
 
-Update or add a given user.
-
-- **Permission**
-  - login only
-- **Request Body**
+- Update or add a given user.
+- **Permission**: login only
+- **Request Body**:
   - `id`: ID of a user. It is a `sub` parameter of JWT.
   - `nickname`: Nickname of the user.
   - `picture`: URL for user's profile image.
-- **Returns**
+- **Returns**:-
   - `id: string`: ID for updated user.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/users \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"id":"google-oauth2|106050262959037228016","nickname":"Seokmin Hong","picture":""}'
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -167,15 +216,17 @@ Update or add a given user.
   }
   ```
 
-### `GET /articles`
+### `GET '/articles'`
 
-Get all articles from the database.
-
-- **Permission**
-  - public
-- **Returns**
+- Get all articles from the database.
+- **Permission**: public
+- **Returns**:
   - `articles: [Article]`: List of articles.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/articles
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -193,19 +244,22 @@ Get all articles from the database.
   }
   ```
 
-### `POST /articles`
+### `POST '/articles'`
 
-Add an article to the database. It's recommended to be fetched automatically when the static site's pages are generated.
-
-_NOTICE_: It assumes you are fetching this endpoint for automatic page generation. Thus it allows to fetch to existing id and it ignores internally.
-
-- **Permission**
-  - `post:articles`
-- **Request Body**
+- Add an article to the database. It's recommended to be fetched automatically when the static site's pages are generated.
+  - _NOTICE_: It assumes you are fetching this endpoint for automatic page generation. Thus it allows to fetch to existing id and it ignores internally.
+- **Permission**: `post:articles`
+- **Request Body**:
   - `id`: Identifier for articles. It should be unique so it is recommened to be URL or slug for itself.
-- **Returns**
+- **Returns**:
   - `id: string`: ID for an added article.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/articles \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"id":"new-beginnings"}'
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -213,15 +267,18 @@ _NOTICE_: It assumes you are fetching this endpoint for automatic page generatio
   }
   ```
 
-### `DELETE /articles/<id:string>`
+### `DELETE '/articles/<string:id>'`
 
-Remove an article from the database. Comments related with the articles will be removed too.
-
-- **Permission**
-  - `delete:articles`
-- **Returns**
+- Remove an article from the database. Comments related with the articles will be removed too.
+- **Permission**: `delete:articles`
+- **Returns**:
   - `id: string`: ID for a removed article.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X DELETE http://localhost:5000/articles/new-beginnings \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -229,16 +286,18 @@ Remove an article from the database. Comments related with the articles will be 
   }
   ```
 
-### `GET /articles/<id:string>/comments`
+### `GET '/articles/<string:id>/comments'`
 
-Get all comments for a given article.
-
-- **Permission**
-  - public
-- **Returns**
+- Get all comments for a given article.
+- **Permission**: public
+- **Returns**:
   - `count: int`: Number of the comments for the article.
   - `comments: [RecursiveComment]`: Comments for the article. It has recursive structure for replies. Note that it includes removed comments if its replies are exist.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X GET http://localhost:5000/articles/new-beginnings/comments
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "comments": [
@@ -286,17 +345,21 @@ Get all comments for a given article.
   }
   ```
 
-### `POST /articles/<id:string>/comments`
+### `POST '/articles/<string:id>/comments'`
 
-Add a comment to a given article.
-
-- **Permission**
-  - `post:comments`
-- **Request Body**
+- Add a comment to a given article.
+- **Permission**: `post:comments`
+- **Request Body**:
   - `content`: A content of comment.
-- **Returns**
+- **Returns**:
   - `id: int`: ID for an added comment.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/articles/new-beginnings/comments \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"content":"New comment!"}'
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -304,17 +367,19 @@ Add a comment to a given article.
   }
   ```
 
-### `GET /comments`
+### `GET '/comments'`
 
-Get all comments ordered by time.
-
-- **Permission**
-  - public
-- **Arguments**
-  - `page`: Page of comment. Contents for page is 20.
-- **Returns**
+- Get all comments ordered by time. Removed comments are ignored.
+- **Permission**: public
+- **Arguments**:
+  - `page: int`: Page of comment. Contents for page is 20 and default value is 1.
+- **Returns**:
   - `comments: [Comment]`: List of comments. It is not a recursive form and it ignores removed ones.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X GET http://localhost:5000/comments?page=1
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "comments": [
@@ -350,15 +415,17 @@ Get all comments ordered by time.
   }
   ```
 
-### `GET /comments/<id:int>`
+### `GET '/comments/<int:id>'`
 
-Get a comment by given id.
-
-- **Permission**
-  - public
-- **Returns**
+- Get a comment by given id.
+- **Permission**: public
+- **Returns**:
   - `comment: Comment`: A comment having given ID.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X GET http://localhost:5000/comments/1
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "comment": {
@@ -374,17 +441,21 @@ Get a comment by given id.
   }
   ```
 
-### `POST /comments/<id:int>`
+### `POST '/comments/<int:id>'`
 
-Add a reply for a given comment.
-
-- **Permission**
-  - `post:comments`
-- **Request Body**
+- Add a reply for a given comment.
+- **Permission**: `post:comments`
+- **Request Body**:
   - `content`: A content of comment.
-- **Returns**
+- **Returns**:
   - `id: int`: ID for an added reply.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X POST http://localhost:5000/comments/2 \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"content":"New reply!"}'
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -394,15 +465,19 @@ Add a reply for a given comment.
 
 ### `PATCH /comments/<id:int>`
 
-Edit a given comment.
-
-- **Permission**
-  - author of the comment
-- **Request Body**
-  - `content`: A content of comment.
-- **Returns**
+- Edit a given comment.
+- **Permission**: An author of the comment
+- **Request Body**:
+  - `content`: New content of comment.
+- **Returns**:
   - `id: int`: ID for an edited comment.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X PATCH http://localhost:5000/comments/2 \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"content":"Edited!"}'
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
@@ -412,14 +487,16 @@ Edit a given comment.
 
 ### `DELETE /comments/<id:int>`
 
-Remove a given comment.
-
-- **Permission**
-  - author of the comment
-  - `delete:comments`
-- **Returns**
+- Remove a given comment.
+- **Permission**: An author of the comment or `delete:comments`
+- **Returns**:
   - `id: int`: ID for an removed comment.
-- **Sample Returns**
+- **Sample Request**:
+  ```shell
+  curl -X DELETE http://localhost:5000/comments/3 \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+  ```
+- **Sample Returns**:
   ```jsonc
   {
     "success": true,
